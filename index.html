@@ -76,7 +76,8 @@
         autocapitalize="sentences" autocomplete="off" autocorrect="off"
         placeholder="Präsi Eng Social Media 22.3"
         oninput="onOvInput()"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();doSave();}" />
+        onkeydown="if(event.key==='Enter'||event.keyCode===13){event.preventDefault();doSave();return false;}"
+        enterkeyhint="done" />
       <button class="ov-save" onclick="doSave()">Speichern</button>
     </div>
   </div>
@@ -143,7 +144,10 @@ function openOverlay(id) {
   document.getElementById('ovHint').innerHTML = '';
   document.getElementById('overlay').classList.add('open');
   onOvInput();
-  setTimeout(() => inp.focus(), 80);
+  // iOS Safari requires focus() called synchronously within a user gesture
+  inp.focus();
+  setTimeout(() => inp.focus(), 50);
+  setTimeout(() => inp.focus(), 150);
 }
 function closeOverlay() {
   document.getElementById('overlay').classList.remove('open');
