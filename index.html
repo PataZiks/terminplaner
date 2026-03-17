@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Schulplaner" />
+<title>Schulplaner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0f0f13; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  .app { max-width: 430px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+  .header { background: #16161d; padding: env(safe-area-inset-top, 16px) 18px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+  .header h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .notify-bar { background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .notify-bar span { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .notify-btn { font-size: 12px; background: rgba(255,255,255,0.1); color: #fff; border: none; border-radius: 6px; padding: 5px 11px; cursor: pointer; font-weight: 500; }
+  .notify-btn:active { opacity: 0.7; }
+  .content { flex: 1; padding: 14px 16px; overflow-y: auto; }
+  .day-group { margin-bottom: 18px; }
+  .day-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
+  .today-pill { font-size: 10px; background: #2e7d52; color: #fff; border-radius: 20px; padding: 1px 8px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+  .entry { display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: #1c1c25; border-radius: 12px; margin-bottom: 6px; border-left: 4px solid #555; cursor: pointer; transition: background 0.1s; }
+  .entry:active { background: #25252f; }
+  .entry-title { flex: 1; font-size: 14px; color: #f0f0f0; }
+  .del-btn { background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 14px; padding: 4px 6px; }
+  .del-btn:active { color: #ff6b6b; }
+  .empty { text-align: center; padding: 50px 16px; color: rgba(255,255,255,0.25); font-size: 13px; line-height: 2; }
+  .empty strong { color: rgba(255,255,255,0.5); }
+  .add-bar { padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); background: #0f0f13; border-top: 0.5px solid rgba(255,255,255,0.06); }
+  .add-trigger { width: 100%; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 30px; font-weight: 300; padding: 13px; cursor: pointer; display: block; line-height: 1; transition: background 0.15s; }
+  .add-trigger:active { background: #255f3f; }
+  .overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .overlay.open { pointer-events: all; }
+  .overlay-bg { position: absolute; inset: 0; cursor: pointer; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: background 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease; }
+  .overlay.open .overlay-bg { background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .overlay-box { position: relative; width: calc(100% - 40px); max-width: 390px; display: flex; flex-direction: column; opacity: 0; transform: translateY(14px); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .overlay.open .overlay-box { opacity: 1; transform: translateY(0); }
+  .hint-row { min-height: 20px; display: flex; align-items: center; padding: 0 4px; margin-bottom: 6px; }
+  .hint-ok  { font-size: 12px; color: #69f0ae; font-weight: 500; }
+  .hint-tip { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .hint-err { font-size: 12px; color: #ff6b6b; }
+  .overlay-inp { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 17px 18px; font-size: 16px; color: #fff; outline: none; caret-color: #69f0ae; margin-bottom: 10px; font-family: inherit; }
+  .overlay-inp::placeholder { color: rgba(255,255,255,0.25); }
+  .overlay-inp:focus { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+  .ov-save { width: 100%; padding: 15px; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .ov-save:active { background: #255f3f; }
+  .toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px); left: 50%; transform: translateX(-50%); background: #1c1c25; border: 0.5px solid rgba(255,255,255,0.12); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 20px; white-space: nowrap; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Schulplaner</h1>
+    <div class="header-sub" id="hSub"></div>
+    <div class="notify-bar">
+      <span>Pushover verbunden</span>
+      <button class="notify-btn" onclick="sendPush()">Jetzt testen</button>
+    </div>
+  </div>
+
+  <div class="content" id="mainContent"></div>
+
+  <div class="add-bar">
+    <button class="add-trigger" onclick="openOverlay(null)">+</button>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-bg" onclick="closeOverlay()"></div>
+    <div class="overlay-box">
+      <div class="hint-row" id="ovHint"></div>
+      <input class="overlay-inp" id="ovInp" type="text"
+        autocapitalize="sentences" autocomplete="off" autocorrect="off"
+        placeholder="Präsi Eng Social Media 22.3"
+        oninput="onOvInput()"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();doSave();}" />
+      <button class="ov-save" onclick="doSave()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_TOKEN = 'atwj31snzw9vhddn9e3a48tniknjd2';
+const USER_KEY  = 'uca85b3gy85adgxivhrrzknxrbfjvg';
+const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MONTHS_DE = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const COLORS    = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#3949ab','#d81b60','#00acc1','#43a047','#fb8c00','#6d4c41','#546e7a'];
+
+let entries   = JSON.parse(localStorage.getItem('sp_final_entries') || '[]');
+let nextId    = Math.max(0, ...entries.map(e => e.id), 0) + 1;
+let editingId = null;
+
+if (!entries.length) {
+  const od = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().split('T')[0]; };
+  entries = [
+    { id:1, title:'Englisch Vokabeln', date:od(0), color:rc() },
+    { id:2, title:'Mathematik Test',   date:od(2), color:rc() },
+    { id:3, title:'Präsi Deutsch',     date:od(4), color:rc() },
+    { id:4, title:'Elternsprechtag',   date:od(7), color:rc() },
+  ];
+  saveAll();
+}
+
+function rc() { return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+function saveAll() { localStorage.setItem('sp_final_entries', JSON.stringify(entries)); }
+
+function daysUntil(ds) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(ds+'T12:00:00');
+  return Math.round((d-t)/86400000);
+}
+function fmtDate(ds) {
+  const d = new Date(ds+'T12:00:00');
+  return DAYS_DE[d.getDay()]+', '+d.getDate()+'. '+MONTHS_DE[d.getMonth()];
+}
+function parseDate(raw) {
+  const m = raw.match(/(\d{1,2})[.\-\/](\d{1,2})(?:[.\-\/](\d{2,4}))?/);
+  if (!m) return null;
+  const day=parseInt(m[1]), mon=parseInt(m[2])-1;
+  const now=new Date();
+  let year=m[3]?(m[3].length===2?2000+parseInt(m[3]):parseInt(m[3])):now.getFullYear();
+  if(day<1||day>31||mon<0||mon>11) return null;
+  const ds=`${year}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  if(daysUntil(ds)<0) return `${year+1}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  return ds;
+}
+function stripDate(raw) { return raw.replace(/\s*\d{1,2}[.\-\/]\d{1,2}(?:[.\-\/]\d{2,4})?\s*/g,' ').trim(); }
+function capFirst(s)    { return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+function entryToString(e) {
+  const d = new Date(e.date+'T12:00:00');
+  return e.title+' '+d.getDate()+'.'+(d.getMonth()+1);
+}
+
+function openOverlay(id) {
+  editingId = id;
+  const inp = document.getElementById('ovInp');
+  inp.value = id !== null ? entryToString(entries.find(x=>x.id===id)) : '';
+  document.getElementById('ovHint').innerHTML = '';
+  document.getElementById('overlay').classList.add('open');
+  onOvInput();
+  setTimeout(() => inp.focus(), 80);
+}
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+  editingId = null;
+}
+function onOvInput() {
+  const raw = document.getElementById('ovInp').value;
+  const hb  = document.getElementById('ovHint');
+  if (!raw.trim()) { hb.innerHTML=''; return; }
+  const ds = parseDate(raw);
+  if (ds) hb.innerHTML=`<span class="hint-ok">${fmtDate(ds)}</span>`;
+  else if (/\d{1,2}[.\-\/]\d/.test(raw)) hb.innerHTML=`<span class="hint-err">Datum nicht erkannt</span>`;
+  else hb.innerHTML=`<span class="hint-tip">Datum hinzufügen: z.B. 22.3</span>`;
+}
+function doSave() {
+  let raw = document.getElementById('ovInp').value.trim();
+  if (!raw) return;
+  raw = capFirst(raw);
+  const ds = parseDate(raw);
+  if (!ds) { showToast('Datum angeben – z.B. 22.3'); return; }
+  const title = capFirst(stripDate(raw));
+  if (!title) { showToast('Bitte Text eingeben!'); return; }
+  if (editingId !== null) {
+    const idx = entries.findIndex(e=>e.id===editingId);
+    if (idx>-1) { entries[idx].title=title; entries[idx].date=ds; }
+  } else {
+    entries.push({ id:nextId++, title, date:ds, color:rc() });
+  }
+  saveAll(); closeOverlay(); render();
+  showToast(editingId!==null?'Geändert!':'Eingetragen!');
+}
+function delEntry(id) { entries=entries.filter(e=>e.id!==id); saveAll(); render(); }
+
+function render() {
+  const today    = new Date().toISOString().split('T')[0];
+  const upcoming = entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+  const past     = entries.filter(e=>daysUntil(e.date)<0).sort((a,b)=>b.date.localeCompare(a.date));
+  const c = document.getElementById('mainContent');
+  const ti = upcoming.filter(e=>e.date===today);
+  document.getElementById('hSub').textContent = ti.length
+    ? 'Heute: '+ti.map(e=>e.title).join(', ')
+    : 'Heute nichts fällig';
+  if (!entries.length) {
+    c.innerHTML='<div class="empty">Noch nichts eingetragen.<br>Tippe unten auf <strong>+</strong></div>'; return;
+  }
+  const g={};
+  upcoming.forEach(e=>{ if(!g[e.date]) g[e.date]=[]; g[e.date].push(e); });
+  let html='';
+  Object.keys(g).sort().forEach(date=>{
+    const days=daysUntil(date), isToday=date===today;
+    const label=isToday?'Heute':days===1?'Morgen':fmtDate(date);
+    html+=`<div class="day-group"><div class="day-label">${label}${isToday?'<span class="today-pill">Heute</span>':''}</div>`;
+    g[date].forEach(e=>{
+      html+=`<div class="entry" style="border-left-color:${e.color||'#555'}" onclick="openOverlay(${e.id})">
+        <div class="entry-title">${e.title}</div>
+        <button class="del-btn" onclick="event.stopPropagation();delEntry(${e.id})">✕</button>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  if(past.length){
+    html+='<div class="day-group"><div class="day-label" style="opacity:0.35;">Vergangen</div>';
+    past.slice(0,5).forEach(e=>{
+      html+=`<div class="entry" style="opacity:0.25;border-left-color:${e.color||'#555'}" onclick="openOverlay(${e.id})">
+        <div class="entry-title">${e.title} <span style="font-size:12px;color:rgba(255,255,255,0.3);">· ${fmtDate(e.date)}</span></div>
+        <button class="del-btn" onclick="event.stopPropagation();delEntry(${e.id})">✕</button>
+      </div>`;
+    });
+    html+='</div>';
+  }
+  c.innerHTML=html;
+}
+
+async function sendPush() {
+  const up=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+  const msg=up.length?up.map(e=>{const d=daysUntil(e.date);return `${e.title} (${d===0?'Heute':d===1?'Morgen':'in '+d+' Tagen'})`;}).join('\n'):'Nichts offen!';
+  showToast('Wird gesendet…');
+  try {
+    const fd=new FormData();
+    fd.append('token',API_TOKEN); fd.append('user',USER_KEY);
+    fd.append('title',`Schulplaner – ${up.length} offen`);
+    fd.append('message',msg);
+    const r=await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});
+    const j=await r.json();
+    showToast(j.status===1?'Pushover gesendet!':'Fehler beim Senden');
+  } catch(e) { showToast('Netzwerkfehler'); }
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function checkSchedule() {
+  const now=new Date();
+  const hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const today=now.toISOString().split('T')[0];
+  if(hhmm==='07:00'&&localStorage.getItem('sp_last_push')!==today){
+    localStorage.setItem('sp_last_push',today);
+    sendPush();
+  }
+}
+setInterval(checkSchedule,60000);
+render();
+</script>
+</body>
+</html>
