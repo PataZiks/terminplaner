@@ -289,7 +289,7 @@ async function sendPush(){
   try{
     const fd=new FormData();
     fd.append('token',API_TOKEN);fd.append('user',USER_KEY);
-    fd.append('title','Schulplaner – '+up.length+' offen');fd.append('message',msg);fd.append('priority','-1');
+    fd.append('title','Schulplaner – '+up.length+' offen');fd.append('message',msg);fd.append('priority','0');
     const r=await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});
     const j=await r.json();
     showToast(j.status===1?'Pushover gesendet!':'Fehler beim Senden');
