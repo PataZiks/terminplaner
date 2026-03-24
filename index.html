@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Schulplaner" />
+<title>Schulplaner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0f0f13; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  .app { max-width: 430px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+  .header { background: #16161d; padding: env(safe-area-inset-top, 16px) 18px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+  .header h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -0.3px; margin-bottom: 10px; }
+  .test-btn { width: 100%; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); border-radius: 10px; padding: 9px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .test-btn:active { background: rgba(255,255,255,0.12); }
+  .content { flex: 1; padding: 14px 16px; overflow-y: auto; }
+  .day-group { margin-bottom: 18px; }
+  .day-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
+  .today-pill { font-size: 10px; background: #2e7d52; color: #fff; border-radius: 20px; padding: 1px 8px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+  .entry { display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: #1c1c25; border-radius: 12px; margin-bottom: 6px; border-left: 4px solid #555; cursor: pointer; transition: background 0.1s; }
+  .entry:active { background: #25252f; }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-title { font-size: 16px; color: #f0f0f0; font-weight: 500; }
+  .entry-time { font-size: 12px; color: #ffcc00; font-weight: 600; margin-top: 2px; }
+  .del-btn { background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 14px; padding: 4px 6px; flex-shrink: 0; }
+  .del-btn:active { color: #ff6b6b; }
+  .cal-btn { background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 15px; padding: 4px 6px; flex-shrink: 0; }
+  .cal-btn:active { color: #69f0ae; }
+  .empty { text-align: center; padding: 50px 16px; color: rgba(255,255,255,0.25); font-size: 13px; line-height: 2; }
+  .empty strong { color: rgba(255,255,255,0.5); }
+  .add-bar { padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); background: #0f0f13; border-top: 0.5px solid rgba(255,255,255,0.06); }
+  .add-trigger { width: 100%; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 30px; font-weight: 300; padding: 13px; cursor: pointer; display: block; line-height: 1; transition: background 0.15s; }
+  .add-trigger:active { background: #255f3f; }
+  .overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .overlay.open { pointer-events: all; }
+  .overlay-bg { position: absolute; inset: 0; cursor: pointer; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: background 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease; }
+  .overlay.open .overlay-bg { background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .overlay-box { position: relative; width: calc(100% - 40px); max-width: 390px; display: flex; flex-direction: column; opacity: 0; transform: translateY(14px); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .overlay.open .overlay-box { opacity: 1; transform: translateY(0); }
+  .hint-row { min-height: 20px; display: flex; align-items: center; padding: 0 4px; margin-bottom: 6px; }
+  .hint-ok  { font-size: 12px; color: #69f0ae; font-weight: 500; }
+  .hint-tip { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .hint-err { font-size: 12px; color: #ff6b6b; }
+  .overlay-inp { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 17px 18px; font-size: 16px; color: #fff; outline: none; caret-color: #69f0ae; margin-bottom: 10px; font-family: inherit; }
+  .overlay-inp::placeholder { color: rgba(255,255,255,0.25); }
+  .overlay-inp:focus { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+  .ov-save { width: 100%; padding: 15px; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .ov-save:active { background: #255f3f; }
+  .toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px); left: 50%; transform: translateX(-50%); background: #1c1c25; border: 0.5px solid rgba(255,255,255,0.12); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 20px; white-space: nowrap; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Schulplaner</h1>
+    <button class="test-btn" onclick="sendPush()">Testen</button>
+  </div>
+
+  <div class="content" id="mainContent"></div>
+
+  <div class="add-bar">
+    <button class="add-trigger" onclick="openOverlay(null)">+</button>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-bg" onclick="closeOverlay()"></div>
+    <div class="overlay-box">
+      <div class="hint-row" id="ovHint"></div>
+      <input class="overlay-inp" id="ovInp" type="text"
+        autocapitalize="sentences" autocomplete="off" autocorrect="off"
+        placeholder="Präsi Eng Social Media 22.3 10:00"
+        oninput="onOvInput()"
+        onkeydown="onInpKey(event)"
+        enterkeyhint="done" />
+      <button class="ov-save" onclick="doSave()">Speichern</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_TOKEN = 'atwj31snzw9vhddn9e3a48tniknjd2';
+const USER_KEY  = 'uca85b3gy85adgxivhrrzknxrbfjvg';
+const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MONTHS_DE = ['Jaenner','Februar','Maerz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MONTHS_DE_DISP = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const COLORS = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#3949ab','#d81b60','#00acc1','#43a047','#fb8c00','#6d4c41','#546e7a'];
+
+let entries   = JSON.parse(localStorage.getItem('sp_final_entries') || '[]');
+let nextId    = Math.max(0, ...entries.map(e => e.id), 0) + 1;
+let editingId = null;
+let isSaving  = false;
+
+if (!entries.length) {
+  const od = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().split('T')[0]; };
+  entries = [
+    { id:1, title:'Englisch Vokabeln', date:od(0), time:null,    color:rc() },
+    { id:2, title:'Mathematik Test',   date:od(2), time:'08:00', color:rc() },
+    { id:3, title:'Präsi Deutsch',     date:od(4), time:'13:30', color:rc() },
+    { id:4, title:'Elternsprechtag',   date:od(7), time:'15:00', color:rc() },
+  ];
+  saveAll();
+}
+
+function rc() { return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+function saveAll() { localStorage.setItem('sp_final_entries', JSON.stringify(entries)); }
+
+function daysUntil(ds) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(ds+'T12:00:00');
+  return Math.round((d-t)/86400000);
+}
+function fmtDate(ds) {
+  const d = new Date(ds+'T12:00:00');
+  return DAYS_DE[d.getDay()]+', '+d.getDate()+'. '+MONTHS_DE_DISP[d.getMonth()];
+}
+function parseDate(raw) {
+  const m = raw.match(/(\d{1,2})[.\-\/](\d{1,2})(?:[.\-\/](\d{2,4}))?/);
+  if (!m) return null;
+  const day=parseInt(m[1]), mon=parseInt(m[2])-1;
+  const now=new Date();
+  let year=m[3]?(m[3].length===2?2000+parseInt(m[3]):parseInt(m[3])):now.getFullYear();
+  if(day<1||day>31||mon<0||mon>11) return null;
+  const ds=year+'-'+String(mon+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  if(daysUntil(ds)<0) return (year+1)+'-'+String(mon+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  return ds;
+}
+function parseTime(raw) {
+  // matches 10:00, 10;00, 10.00 — but NOT date patterns like 22.3
+  const m = raw.match(/\b(\d{1,2})[:;](\d{2})\b/);
+  if (!m) return null;
+  const h=parseInt(m[1]), min=parseInt(m[2]);
+  if(h<0||h>23||min<0||min>59) return null;
+  return String(h).padStart(2,'0')+':'+String(min).padStart(2,'0');
+}
+function stripDate(s) { return s.replace(/\s*\d{1,2}[.\-\/]\d{1,2}(?:[.\-\/]\d{2,4})?\s*/g,' ').trim(); }
+function stripTime(s) { return s.replace(/\s*\b\d{1,2}[:;]\d{2}\b\s*/g,' ').trim(); }
+function capFirst(s)  { return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+function entryToString(e) {
+  const d = new Date(e.date+'T12:00:00');
+  let s = e.title+' '+d.getDate()+'.'+(d.getMonth()+1);
+  if (e.time) s += ' '+e.time;
+  return s;
+}
+
+function onInpKey(ev) {
+  if (ev.key==='Enter'||ev.keyCode===13) { ev.preventDefault(); ev.stopPropagation(); doSave(); return false; }
+}
+
+function openOverlay(id) {
+  editingId=id; isSaving=false;
+  const inp=document.getElementById('ovInp');
+  inp.value = id!==null ? entryToString(entries.find(x=>x.id===id)) : '';
+  document.getElementById('ovHint').innerHTML='';
+  document.getElementById('overlay').classList.add('open');
+  onOvInput();
+  inp.focus();
+  setTimeout(()=>inp.focus(),50);
+  setTimeout(()=>inp.focus(),150);
+}
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+  editingId=null; isSaving=false;
+}
+function onOvInput() {
+  const raw=document.getElementById('ovInp').value;
+  const hb=document.getElementById('ovHint');
+  if(!raw.trim()){hb.innerHTML='';return;}
+  const ds=parseDate(raw), time=parseTime(raw);
+  if(ds) {
+    hb.innerHTML='<span class="hint-ok">'+fmtDate(ds)+(time?' &nbsp;<span style="color:#ffcc00;font-weight:600;">'+time+' Uhr</span>':'')+'</span>';
+  } else if(/\d{1,2}[.\-\/]\d/.test(raw)) {
+    hb.innerHTML='<span class="hint-err">Datum nicht erkannt</span>';
+  } else {
+    hb.innerHTML='<span class="hint-tip">Datum hinzufügen: z.B. 22.3 oder 22.3 10:00</span>';
+  }
+}
+function doSave() {
+  if(isSaving) return;
+  isSaving=true;
+  let raw=document.getElementById('ovInp').value.trim();
+  if(!raw){isSaving=false;return;}
+  raw=capFirst(raw);
+  const ds=parseDate(raw), time=parseTime(raw);
+  if(!ds){showToast('Datum angeben – z.B. 22.3');isSaving=false;return;}
+  let title=capFirst(stripTime(stripDate(raw)));
+  if(!title){showToast('Bitte Text eingeben!');isSaving=false;return;}
+  if(editingId!==null){
+    const idx=entries.findIndex(e=>e.id===editingId);
+    if(idx>-1){entries[idx].title=title;entries[idx].date=ds;entries[idx].time=time;}
+  } else {
+    entries.push({id:nextId++,title,date:ds,time,color:rc()});
+  }
+  saveAll(); closeOverlay(); render();
+  showToast(editingId!==null?'Geändert!':'Eingetragen!');
+}
+function delEntry(id){entries=entries.filter(e=>e.id!==id);saveAll();render();}
+function exportToCalendar(id) {
+  const e = entries.find(x=>x.id===id);
+  if (!e) return;
+  const ds = e.date.replace(/-/g,"");
+  let dtstart, dtend;
+  if (e.time) {
+    const t = e.time.replace(":","");
+    dtstart = ds+"T"+t+"00";
+    const h = parseInt(e.time.split(":")[0]);
+    const m = parseInt(e.time.split(":")[1]);
+    const endH = String(h+1).padStart(2,"0");
+    dtend = ds+"T"+endH+String(m).padStart(2,"0")+"00";
+  } else {
+    dtstart = ds;
+    const next = new Date(e.date+"T12:00:00");
+    next.setDate(next.getDate()+1);
+    dtend = next.toISOString().split("T")[0].replace(/-/g,"");
+  }
+  const allday = !e.time;
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VEVENT",
+    "SUMMARY:"+e.title,
+    allday?"DTSTART;VALUE=DATE:"+dtstart:"DTSTART:"+dtstart,
+    allday?"DTEND;VALUE=DATE:"+dtend:"DTEND:"+dtend,
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+  const blob = new Blob([ics], {type:"text/calendar"});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = e.title+".ics";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Zum Kalender hinzugefügt!");
+}
+
+function render() {
+  const today=new Date().toISOString().split('T')[0];
+  const upcoming=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+  const past=entries.filter(e=>daysUntil(e.date)<0).sort((a,b)=>b.date.localeCompare(a.date));
+  const c=document.getElementById('mainContent');
+  const ti=upcoming.filter(e=>e.date===today);
+  // header-sub removed
+  if(!entries.length){c.innerHTML='<div class="empty">Noch nichts eingetragen.<br>Tippe unten auf <strong>+</strong></div>';return;}
+  const g={};
+  upcoming.forEach(e=>{if(!g[e.date])g[e.date]=[];g[e.date].push(e);});
+  // Sort each day: no-time first, then by time ascending
+  Object.keys(g).forEach(date=>{
+    g[date].sort((a,b)=>{
+      if(!a.time && !b.time) return 0;
+      if(!a.time) return -1;
+      if(!b.time) return 1;
+      return a.time.localeCompare(b.time);
+    });
+  });
+  let html='';
+  Object.keys(g).sort().forEach(date=>{
+    const days=daysUntil(date),isToday=date===today;
+    const label=isToday?'Heute':days===1?'Morgen':fmtDate(date);
+    html+='<div class="day-group"><div class="day-label">'+label+(isToday?'<span class="today-pill">Heute</span>':'')+'</div>';
+    g[date].forEach(e=>{
+      html+='<div class="entry" style="border-left-color:'+( e.color||'#555')+'" onclick="openOverlay('+e.id+')">'
+        +'<div class="entry-body"><div class="entry-title">'+e.title+'</div>'
+        +(e.time?'<div class="entry-time">'+e.time+' Uhr</div>':'')
+        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button><button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
+    });
+    html+='</div>';
+  });
+  if(past.length){
+    html+='<div class="day-group"><div class="day-label" style="opacity:0.35;">Vergangen</div>';
+    past.slice(0,5).forEach(e=>{
+      html+='<div class="entry" style="opacity:0.25;border-left-color:'+(e.color||'#555')+'" onclick="openOverlay('+e.id+')">'
+        +'<div class="entry-body"><div class="entry-title">'+e.title+' <span style="font-size:12px;color:rgba(255,255,255,0.3);">· '+fmtDate(e.date)+'</span></div>'
+        +(e.time?'<div class="entry-time">'+e.time+' Uhr</div>':'')
+        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button><button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
+    });
+    html+='</div>';
+  }
+  c.innerHTML=html;
+}
+
+async function sendPush(){
+  const up=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!up.length){showToast('Nichts offen!');return;}
+  showToast('Wird gesendet…');
+  let ok=0;
+  for(const e of up){
+    const d=daysUntil(e.date);
+    const w=d===0?'Heute':d===1?'Morgen':'in '+d+' Tagen';
+    const msg=e.time?e.title+' um '+e.time+' Uhr':e.title;
+    const title=w+': '+e.title;
+    try{
+      const fd=new FormData();
+      fd.append('token',API_TOKEN);fd.append('user',USER_KEY);
+      fd.append('title',title);fd.append('message',msg);fd.append('priority','0');
+      const r=await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});
+      const j=await r.json();
+      if(j.status===1)ok++;
+    }catch(e){}
+  }
+  showToast(ok===up.length?'Alle gesendet!':ok+' von '+up.length+' gesendet');
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+async function sendSinglePush(title,message){
+  try{const fd=new FormData();fd.append('token',API_TOKEN);fd.append('user',USER_KEY);fd.append('title',title);fd.append('message',message);fd.append('priority','-1');await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});}catch(e){}
+}
+async function checkSchedule(){
+  const now=new Date();
+  const hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const today=now.toISOString().split('T')[0];
+  if(hhmm!=='10:00')return;
+  if(localStorage.getItem('sp_last_schedule')===today)return;
+  localStorage.setItem('sp_last_schedule',today);
+  for(const days of [3,1,0]){
+    const label=days===0?'Heute':days===1?'Morgen':'In 3 Tagen';
+    const targets=entries.filter(e=>daysUntil(e.date)===days);
+    for(const e of targets){
+      const msg=e.time?e.title+' um '+e.time+' Uhr':e.title;
+      await sendSinglePush(label+': '+e.title,msg);
+    }
+  }
+}
+setInterval(checkSchedule,60000);
+render();
+</script>
+</body>
+</html>
