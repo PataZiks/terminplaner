@@ -1,0 +1,63 @@
+name: Daily Pushover Notifications
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 08:00 UTC = 10:00 Austria (CEST, UTC+2)
+  workflow_dispatch:        # allow manual trigger from Actions tab
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Pushover notifications
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+        run: |
+          python3 - << 'PYEOF'
+          import json, os, urllib.request, urllib.parse
+          from datetime import date, timedelta
+
+          with open('entries.json', encoding='utf-8') as f:
+              entries = json.load(f)
+
+          token = os.environ['PUSHOVER_TOKEN']
+          user  = os.environ['PUSHOVER_USER']
+          today = date.today()
+          sent  = 0
+
+          for days_ahead in [0, 1, 3]:
+              target = today + timedelta(days=days_ahead)
+              label  = {0: 'Heute', 1: 'Morgen', 3: 'In 3 Tagen'}[days_ahead]
+              for entry in entries:
+                  if entry.get('date') != target.isoformat():
+                      continue
+                  title_str = f"{label}: {entry['title']}"
+                  msg = (f"{entry['title']} um {entry['time']} Uhr"
+                         if entry.get('time') else entry['title'])
+                  data = urllib.parse.urlencode({
+                      'token':   token,
+                      'user':    user,
+                      'title':   title_str,
+                      'message': msg,
+                      'priority': '0',
+                  }).encode()
+                  req = urllib.request.Request(
+                      'https://api.pushover.net/1/messages.json',
+                      data=data, method='POST'
+                  )
+                  try:
+                      with urllib.request.urlopen(req) as resp:
+                          result = json.loads(resp.read())
+                          if result.get('status') == 1:
+                              sent += 1
+                              print(f'Sent: {title_str}')
+                          else:
+                              print(f'Failed: {title_str} → {result}')
+                  except Exception as e:
+                      print(f'Error sending {title_str}: {e}')
+
+          print(f'Done. {sent} notification(s) sent.')
+          PYEOF
