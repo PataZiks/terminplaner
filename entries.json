@@ -1,0 +1,23 @@
+[
+  {
+    "id": 2,
+    "title": "Mathematik Test",
+    "date": "2026-03-20",
+    "time": "08:00",
+    "color": "#1e88e5"
+  },
+  {
+    "id": 3,
+    "title": "Präsi Deutsch",
+    "date": "2026-03-22",
+    "time": "13:30",
+    "color": "#1e88e5"
+  },
+  {
+    "id": 4,
+    "title": "Elternsprechtag",
+    "date": "2026-03-25",
+    "time": "15:00",
+    "color": "#3949ab"
+  }
+]
