@@ -12,14 +12,7 @@
   body { background: #0f0f13; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
   .app { max-width: 430px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
   .header { background: #16161d; padding: env(safe-area-inset-top, 16px) 18px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
-  .header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .header-top h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -0.3px; flex: 1; }
-  .sync-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: background 0.3s; }
-  .sync-dot.none     { background: rgba(255,255,255,0.2); }
-  .sync-dot.syncing  { background: #ffcc00; animation: dotpulse 1s ease-in-out infinite; }
-  .sync-dot.ok       { background: #69f0ae; }
-  .sync-dot.error    { background: #ff6b6b; }
-  @keyframes dotpulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .header h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -0.3px; margin-bottom: 10px; }
   .test-btn { width: 100%; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); border-radius: 10px; padding: 9px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .test-btn:active { background: rgba(255,255,255,0.12); }
   .content { flex: 1; padding: 14px 16px; overflow-y: auto; }
@@ -40,14 +33,12 @@
   .add-bar { padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); background: #0f0f13; border-top: 0.5px solid rgba(255,255,255,0.06); }
   .add-trigger { width: 100%; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 30px; font-weight: 300; padding: 13px; cursor: pointer; display: block; line-height: 1; transition: background 0.15s; }
   .add-trigger:active { background: #255f3f; }
-  /* shared overlay */
   .overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; }
   .overlay.open { pointer-events: all; }
   .overlay-bg { position: absolute; inset: 0; cursor: pointer; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: background 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease; }
   .overlay.open .overlay-bg { background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .overlay-box { position: relative; width: calc(100% - 40px); max-width: 390px; display: flex; flex-direction: column; opacity: 0; transform: translateY(14px); transition: opacity 0.3s ease, transform 0.3s ease; }
   .overlay.open .overlay-box { opacity: 1; transform: translateY(0); }
-  /* add-entry overlay specifics */
   .hint-row { min-height: 20px; display: flex; align-items: center; padding: 0 4px; margin-bottom: 6px; }
   .hint-ok  { font-size: 12px; color: #69f0ae; font-weight: 500; }
   .hint-tip { font-size: 12px; color: rgba(255,255,255,0.3); }
@@ -57,24 +48,6 @@
   .overlay-inp:focus { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
   .ov-save { width: 100%; padding: 15px; background: #2e7d52; color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
   .ov-save:active { background: #255f3f; }
-  /* setup overlay specifics */
-  .setup-card { background: #1c1c25; border-radius: 18px; padding: 22px 20px; border: 0.5px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 12px; }
-  .setup-title { font-size: 17px; font-weight: 600; color: #fff; }
-  .setup-desc { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.5; }
-  .setup-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: -6px; }
-  .setup-inp { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13); border-radius: 12px; padding: 13px 14px; font-size: 15px; color: #fff; outline: none; caret-color: #69f0ae; font-family: inherit; }
-  .setup-inp::placeholder { color: rgba(255,255,255,0.2); }
-  .setup-inp:focus { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.09); }
-  .setup-row { display: flex; gap: 8px; }
-  .setup-connect { flex: 1; padding: 13px; background: #2e7d52; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
-  .setup-connect:active { background: #255f3f; }
-  .setup-skip { padding: 13px 16px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); border: none; border-radius: 12px; font-size: 15px; cursor: pointer; font-family: inherit; }
-  .setup-skip:active { background: rgba(255,255,255,0.1); }
-  .setup-status { font-size: 12px; min-height: 16px; padding: 0 2px; }
-  .setup-status.ok  { color: #69f0ae; }
-  .setup-status.err { color: #ff6b6b; }
-  .setup-status.inf { color: rgba(255,255,255,0.35); }
-  /* toast */
   .toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px); left: 50%; transform: translateX(-50%); background: #1c1c25; border: 0.5px solid rgba(255,255,255,0.12); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 20px; white-space: nowrap; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
   .toast.show { opacity: 1; }
 </style>
@@ -82,10 +55,7 @@
 <body>
 <div class="app">
   <div class="header">
-    <div class="header-top">
-      <h1>Schulplaner</h1>
-      <div class="sync-dot none" id="syncDot" onclick="openSetup()" title="GitHub Sync konfigurieren"></div>
-    </div>
+    <h1>Schulplaner</h1>
     <button class="test-btn" onclick="sendPush()">Testen</button>
   </div>
 
@@ -95,7 +65,6 @@
     <button class="add-trigger" onclick="openOverlay(null)">+</button>
   </div>
 
-  <!-- Add / Edit entry overlay -->
   <div class="overlay" id="overlay">
     <div class="overlay-bg" onclick="closeOverlay()"></div>
     <div class="overlay-box">
@@ -109,30 +78,6 @@
       <button class="ov-save" onclick="doSave()">Speichern</button>
     </div>
   </div>
-
-  <!-- GitHub Setup overlay -->
-  <div class="overlay" id="setupOverlay">
-    <div class="overlay-bg" onclick="closeSetup()"></div>
-    <div class="overlay-box">
-      <div class="setup-card">
-        <div class="setup-title">GitHub Sync</div>
-        <div class="setup-desc">Einträge werden in <strong style="color:rgba(255,255,255,0.7)">entries.json</strong> deines Repos gespeichert und sind auf allen Geräten verfügbar.</div>
-        <div class="setup-label">Repository</div>
-        <input class="setup-inp" id="setupRepo" type="text"
-          placeholder="username/repo"
-          autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" />
-        <div class="setup-label">GitHub Token <span style="font-weight:400;text-transform:none;letter-spacing:0">(fine-grained, Contents read+write)</span></div>
-        <input class="setup-inp" id="setupToken" type="password"
-          placeholder="github_pat_…"
-          autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" />
-        <div class="setup-status inf" id="setupStatus"></div>
-        <div class="setup-row">
-          <button class="setup-connect" onclick="saveSetup()">Verbinden</button>
-          <button class="setup-skip" onclick="closeSetup()">Überspringen</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -140,6 +85,7 @@
 const API_TOKEN = 'atwj31snzw9vhddn9e3a48tniknjd2';
 const USER_KEY  = 'uca85b3gy85adgxivhrrzknxrbfjvg';
 const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MONTHS_DE = ['Jaenner','Februar','Maerz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const MONTHS_DE_DISP = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const COLORS = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#3949ab','#d81b60','#00acc1','#43a047','#fb8c00','#6d4c41','#546e7a'];
 
@@ -148,145 +94,20 @@ let nextId    = Math.max(0, ...entries.map(e => e.id), 0) + 1;
 let editingId = null;
 let isSaving  = false;
 
-// GitHub sync state
-let ghRepo  = localStorage.getItem('sp_gh_repo')  || '';
-let ghToken = localStorage.getItem('sp_gh_token') || '';
-let ghSha   = null; // SHA of current entries.json on GitHub
-
-// ── Base64 helpers (UTF-8 safe) ──────────────────────────────────────────────
-function toB64(str) {
-  const bytes = new TextEncoder().encode(str);
-  const bin = Array.from(bytes, b => String.fromCharCode(b)).join('');
-  return btoa(bin);
-}
-function fromB64(b64) {
-  const bin = atob(b64.replace(/\n/g, ''));
-  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+if (!entries.length) {
+  const od = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().split('T')[0]; };
+  entries = [
+    { id:1, title:'Englisch Vokabeln', date:od(0), time:null,    color:rc() },
+    { id:2, title:'Mathematik Test',   date:od(2), time:'08:00', color:rc() },
+    { id:3, title:'Präsi Deutsch',     date:od(4), time:'13:30', color:rc() },
+    { id:4, title:'Elternsprechtag',   date:od(7), time:'15:00', color:rc() },
+  ];
+  saveAll();
 }
 
-// ── Sync status dot ──────────────────────────────────────────────────────────
-function setSyncStatus(status) {
-  const dot = document.getElementById('syncDot');
-  dot.className = 'sync-dot ' + status;
-  dot.title = { none:'GitHub Sync einrichten', syncing:'Synchronisiert…', ok:'Synchronisiert ✓', error:'Sync-Fehler – tippe zum Konfigurieren' }[status] || '';
-}
-
-// ── GitHub API ───────────────────────────────────────────────────────────────
-async function ghGet() {
-  const r = await fetch(`https://api.github.com/repos/${ghRepo}/contents/entries.json`, {
-    headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github.v3+json' }
-  });
-  return r;
-}
-
-async function loadFromGitHub() {
-  if (!ghRepo || !ghToken) { setSyncStatus('none'); return; }
-  setSyncStatus('syncing');
-  try {
-    const r = await ghGet();
-    if (r.status === 404) {
-      // File doesn't exist yet — push our current entries
-      await pushToGitHub(null);
-      return;
-    }
-    if (!r.ok) { setSyncStatus('error'); return; }
-    const data = await r.json();
-    ghSha = data.sha;
-    const remote = JSON.parse(fromB64(data.content));
-    entries = remote;
-    nextId  = Math.max(0, ...entries.map(e => e.id), 0) + 1;
-    localStorage.setItem('sp_final_entries', JSON.stringify(entries));
-    setSyncStatus('ok');
-    render();
-  } catch (_) {
-    setSyncStatus('error');
-  }
-}
-
-async function saveToGitHub() {
-  if (!ghRepo || !ghToken) return;
-  setSyncStatus('syncing');
-  try {
-    // Always fetch latest SHA before writing to avoid conflicts
-    const getR = await ghGet();
-    if (getR.ok) {
-      const getData = await getR.json();
-      ghSha = getData.sha;
-    } else if (getR.status !== 404) {
-      setSyncStatus('error'); return;
-    }
-    await pushToGitHub(ghSha);
-  } catch (_) {
-    setSyncStatus('error');
-  }
-}
-
-async function pushToGitHub(sha) {
-  const body = { message: 'Update entries', content: toB64(JSON.stringify(entries, null, 2)) };
-  if (sha) body.sha = sha;
-  const r = await fetch(`https://api.github.com/repos/${ghRepo}/contents/entries.json`, {
-    method: 'PUT',
-    headers: { Authorization: `token ${ghToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github.v3+json' },
-    body: JSON.stringify(body)
-  });
-  if (r.ok) {
-    const d = await r.json();
-    ghSha = d.content.sha;
-    setSyncStatus('ok');
-  } else {
-    setSyncStatus('error');
-  }
-}
-
-// ── Local save + GitHub sync ─────────────────────────────────────────────────
-function saveAll() {
-  localStorage.setItem('sp_final_entries', JSON.stringify(entries));
-  saveToGitHub(); // fire-and-forget; dot shows status
-}
-
-// ── Setup overlay ────────────────────────────────────────────────────────────
-function openSetup() {
-  document.getElementById('setupRepo').value  = ghRepo;
-  document.getElementById('setupToken').value = ghToken;
-  setSetupStatus('', '');
-  document.getElementById('setupOverlay').classList.add('open');
-}
-function closeSetup() {
-  document.getElementById('setupOverlay').classList.remove('open');
-}
-function setSetupStatus(cls, msg) {
-  const el = document.getElementById('setupStatus');
-  el.className = 'setup-status ' + cls;
-  el.textContent = msg;
-}
-async function saveSetup() {
-  const repo  = document.getElementById('setupRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/, '');
-  const token = document.getElementById('setupToken').value.trim();
-  if (!repo || !token) { setSetupStatus('err', 'Bitte beide Felder ausfüllen.'); return; }
-  setSetupStatus('inf', 'Verbinde…');
-  try {
-    const r = await fetch(`https://api.github.com/repos/${repo}/contents/entries.json`, {
-      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
-    });
-    if (r.status === 401 || r.status === 403) { setSetupStatus('err', 'Token ungültig oder keine Berechtigung.'); return; }
-    if (r.status !== 200 && r.status !== 404) { setSetupStatus('err', `Fehler: ${r.status}`); return; }
-    // Credentials valid
-    ghRepo  = repo;
-    ghToken = token;
-    localStorage.setItem('sp_gh_repo',  ghRepo);
-    localStorage.setItem('sp_gh_token', ghToken);
-    setSetupStatus('ok', '');
-    closeSetup();
-    showToast('Verbunden!');
-    await loadFromGitHub();
-  } catch (_) {
-    setSetupStatus('err', 'Netzwerkfehler. Bitte erneut versuchen.');
-  }
-}
-
-// ── Add / Edit entry overlay ─────────────────────────────────────────────────
 function rc() { return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+function saveAll() { localStorage.setItem('sp_final_entries', JSON.stringify(entries)); }
+
 function daysUntil(ds) {
   const t = new Date(); t.setHours(0,0,0,0);
   const d = new Date(ds+'T12:00:00');
@@ -308,6 +129,7 @@ function parseDate(raw) {
   return ds;
 }
 function parseTime(raw) {
+  // matches 10:00, 10;00, 10.00 — but NOT date patterns like 22.3
   const m = raw.match(/\b(\d{1,2})[:;](\d{2})\b/);
   if (!m) return null;
   const h=parseInt(m[1]), min=parseInt(m[2]);
@@ -323,9 +145,11 @@ function entryToString(e) {
   if (e.time) s += ' '+e.time;
   return s;
 }
+
 function onInpKey(ev) {
   if (ev.key==='Enter'||ev.keyCode===13) { ev.preventDefault(); ev.stopPropagation(); doSave(); return false; }
 }
+
 function openOverlay(id) {
   editingId=id; isSaving=false;
   const inp=document.getElementById('ovInp');
@@ -374,8 +198,6 @@ function doSave() {
   showToast(editingId!==null?'Geändert!':'Eingetragen!');
 }
 function delEntry(id){entries=entries.filter(e=>e.id!==id);saveAll();render();}
-
-// ── Calendar export ──────────────────────────────────────────────────────────
 function exportToCalendar(id) {
   const e = entries.find(x=>x.id===id);
   if (!e) return;
@@ -386,7 +208,8 @@ function exportToCalendar(id) {
     dtstart = ds+"T"+t+"00";
     const h = parseInt(e.time.split(":")[0]);
     const m = parseInt(e.time.split(":")[1]);
-    dtend = ds+"T"+String(h+1).padStart(2,"0")+String(m).padStart(2,"0")+"00";
+    const endH = String(h+1).padStart(2,"0");
+    dtend = ds+"T"+endH+String(m).padStart(2,"0")+"00";
   } else {
     dtstart = ds;
     const next = new Date(e.date+"T12:00:00");
@@ -395,11 +218,14 @@ function exportToCalendar(id) {
   }
   const allday = !e.time;
   const ics = [
-    "BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT",
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VEVENT",
     "SUMMARY:"+e.title,
     allday?"DTSTART;VALUE=DATE:"+dtstart:"DTSTART:"+dtstart,
     allday?"DTEND;VALUE=DATE:"+dtend:"DTEND:"+dtend,
-    "END:VEVENT","END:VCALENDAR"
+    "END:VEVENT",
+    "END:VCALENDAR"
   ].join("\r\n");
   const blob = new Blob([ics], {type:"text/calendar"});
   const url  = URL.createObjectURL(blob);
@@ -411,15 +237,17 @@ function exportToCalendar(id) {
   showToast("Zum Kalender hinzugefügt!");
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
 function render() {
   const today=new Date().toISOString().split('T')[0];
   const upcoming=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
   const past=entries.filter(e=>daysUntil(e.date)<0).sort((a,b)=>b.date.localeCompare(a.date));
   const c=document.getElementById('mainContent');
+  const ti=upcoming.filter(e=>e.date===today);
+  // header-sub removed
   if(!entries.length){c.innerHTML='<div class="empty">Noch nichts eingetragen.<br>Tippe unten auf <strong>+</strong></div>';return;}
   const g={};
   upcoming.forEach(e=>{if(!g[e.date])g[e.date]=[];g[e.date].push(e);});
+  // Sort each day: no-time first, then by time ascending
   Object.keys(g).forEach(date=>{
     g[date].sort((a,b)=>{
       if(!a.time && !b.time) return 0;
@@ -437,8 +265,7 @@ function render() {
       html+='<div class="entry" style="border-left-color:'+( e.color||'#555')+'" onclick="openOverlay('+e.id+')">'
         +'<div class="entry-body"><div class="entry-title">'+e.title+'</div>'
         +(e.time?'<div class="entry-time">'+e.time+' Uhr</div>':'')
-        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button>'
-        +'<button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
+        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button><button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
     });
     html+='</div>';
   });
@@ -448,15 +275,13 @@ function render() {
       html+='<div class="entry" style="opacity:0.25;border-left-color:'+(e.color||'#555')+'" onclick="openOverlay('+e.id+')">'
         +'<div class="entry-body"><div class="entry-title">'+e.title+' <span style="font-size:12px;color:rgba(255,255,255,0.3);">· '+fmtDate(e.date)+'</span></div>'
         +(e.time?'<div class="entry-time">'+e.time+' Uhr</div>':'')
-        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button>'
-        +'<button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
+        +'</div><button class="cal-btn" onclick="event.stopPropagation();exportToCalendar('+e.id+')">📅</button><button class="del-btn" onclick="event.stopPropagation();delEntry('+e.id+')">✕</button></div>';
     });
     html+='</div>';
   }
   c.innerHTML=html;
 }
 
-// ── Pushover notifications ───────────────────────────────────────────────────
 async function sendPush(){
   const up=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
   if(!up.length){showToast('Nichts offen!');return;}
@@ -466,19 +291,22 @@ async function sendPush(){
     const d=daysUntil(e.date);
     const w=d===0?'Heute':d===1?'Morgen':'in '+d+' Tagen';
     const msg=e.time?e.title+' um '+e.time+' Uhr':e.title;
+    const title=w+': '+e.title;
     try{
       const fd=new FormData();
       fd.append('token',API_TOKEN);fd.append('user',USER_KEY);
-      fd.append('title',w+': '+e.title);fd.append('message',msg);fd.append('priority','0');
+      fd.append('title',title);fd.append('message',msg);fd.append('priority','0');
       const r=await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});
       const j=await r.json();
       if(j.status===1)ok++;
-    }catch(_){}
+    }catch(e){}
   }
   showToast(ok===up.length?'Alle gesendet!':ok+' von '+up.length+' gesendet');
 }
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
 async function sendSinglePush(title,message){
-  try{const fd=new FormData();fd.append('token',API_TOKEN);fd.append('user',USER_KEY);fd.append('title',title);fd.append('message',message);fd.append('priority','-1');await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});}catch(_){}
+  try{const fd=new FormData();fd.append('token',API_TOKEN);fd.append('user',USER_KEY);fd.append('title',title);fd.append('message',message);fd.append('priority','-1');await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});}catch(e){}
 }
 async function checkSchedule(){
   const now=new Date();
@@ -497,35 +325,7 @@ async function checkSchedule(){
   }
 }
 setInterval(checkSchedule,60000);
-
-// ── Toast ────────────────────────────────────────────────────────────────────
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-
-// ── Init ─────────────────────────────────────────────────────────────────────
-(function init() {
-  // Seed demo entries only if no data anywhere
-  if (!entries.length && !ghRepo) {
-    const od = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().split('T')[0]; };
-    entries = [
-      { id:1, title:'Englisch Vokabeln', date:od(0), time:null,    color:rc() },
-      { id:2, title:'Mathematik Test',   date:od(2), time:'08:00', color:rc() },
-      { id:3, title:'Präsi Deutsch',     date:od(4), time:'13:30', color:rc() },
-      { id:4, title:'Elternsprechtag',   date:od(7), time:'15:00', color:rc() },
-    ];
-    nextId = 5;
-    localStorage.setItem('sp_final_entries', JSON.stringify(entries));
-  }
-
-  render();
-
-  if (ghRepo && ghToken) {
-    loadFromGitHub(); // async — updates entries & re-renders when done
-  } else {
-    setSyncStatus('none');
-    // Show setup banner on first visit (no credentials configured)
-    setTimeout(openSetup, 600);
-  }
-})();
+render();
 </script>
 </body>
 </html>
