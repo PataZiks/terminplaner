@@ -1,6 +1,6 @@
 // Cloudflare Worker for Schulplaner
 // Bindings required (set in Cloudflare dashboard):
-//   KV namespace binding: PLANNER_KV
+//   KV namespace binding: Planner
 //   Secrets: PUSHOVER_TOKEN, PUSHOVER_USER, WRITE_SECRET
 //
 // Routes:
@@ -29,7 +29,7 @@ function daysUntil(dateStr, now) {
 }
 
 async function loadEntries(env) {
-  const raw = await env.PLANNER_KV.get('entries');
+  const raw = await env.Planner.get('entries');
   return raw ? JSON.parse(raw) : [];
 }
 
@@ -66,7 +66,7 @@ async function handleTestPush(env) {
 async function runDailyReminders(env) {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
-  const lastRun = await env.PLANNER_KV.get('lastRun');
+  const lastRun = await env.Planner.get('lastRun');
   if (lastRun === today) return { skipped: true };
 
   const entries = await loadEntries(env);
@@ -80,7 +80,7 @@ async function runDailyReminders(env) {
       if (ok) sent++;
     }
   }
-  await env.PLANNER_KV.put('lastRun', today);
+  await env.Planner.put('lastRun', today);
   return { sent };
 }
 
@@ -101,7 +101,7 @@ export default {
       const body = await request.json().catch(() => null);
       if (!body || body.secret !== env.WRITE_SECRET) return json({ error: 'unauthorized' }, 401);
       if (!Array.isArray(body.entries)) return json({ error: 'entries must be an array' }, 400);
-      await env.PLANNER_KV.put('entries', JSON.stringify(body.entries));
+      await env.Planner.put('entries', JSON.stringify(body.entries));
       return json({ ok: true });
     }
 
