@@ -6,6 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Schulplaner" />
+<meta name="theme-color" content="#16161d" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-192.png" />
 <title>Planer</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -16,9 +20,13 @@
   .test-btn { width: 100%; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); border-radius: 10px; padding: 9px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .test-btn:active { background: rgba(255,255,255,0.12); }
   .content { flex: 1; padding: 14px 16px; overflow-y: auto; }
+  .search-inp { width: 100%; background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 13px; font-size: 14px; color: #fff; outline: none; margin-bottom: 14px; font-family: inherit; }
+  .search-inp::placeholder { color: rgba(255,255,255,0.3); }
+  .search-inp:focus { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.09); }
   .day-group { margin-bottom: 18px; }
   .day-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
   .today-pill { font-size: 10px; background: #2e7d52; color: #fff; border-radius: 20px; padding: 1px 8px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+  .countdown-pill { font-size: 10px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.55); border-radius: 20px; padding: 1px 8px; letter-spacing: 0; text-transform: none; font-weight: 600; }
   .entry { display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: #1c1c25; border-radius: 12px; margin-bottom: 6px; border-left: 4px solid #555; cursor: pointer; transition: background 0.1s; }
   .entry:active { background: #25252f; }
   .entry-body { flex: 1; min-width: 0; }
@@ -59,7 +67,10 @@
     <button class="test-btn" onclick="sendPush()">Testen</button>
   </div>
 
-  <div class="content" id="mainContent"></div>
+  <div class="content">
+    <input class="search-inp" id="searchInp" type="text" placeholder="Suche nach Fach…" oninput="render()" autocomplete="off" autocorrect="off" />
+    <div id="mainContent"></div>
+  </div>
 
   <div class="add-bar">
     <button class="add-trigger" onclick="openOverlay(null)">+</button>
@@ -82,10 +93,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_TOKEN = 'atwj31snzw9vhddn9e3a48tniknjd2';
-const USER_KEY  = 'uca85b3gy85adgxivhrrzknxrbfjvg';
+// Worker-URL nach dem Deploy anpassen (siehe README/Anleitung).
+const WORKER_URL   = 'https://schulplaner.YOUR-SUBDOMAIN.workers.dev';
+const WRITE_SECRET = 'KHI8Pr9MASe0aTBDQ6xB8nXefW_hlDhC';
 const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-const MONTHS_DE = ['Jaenner','Februar','Maerz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const MONTHS_DE_DISP = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const COLORS = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#3949ab','#d81b60','#00acc1','#43a047','#fb8c00','#6d4c41','#546e7a'];
 
@@ -97,16 +108,30 @@ let isSaving  = false;
 if (!entries.length) {
   const od = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().split('T')[0]; };
   entries = [
-    { id:1, title:'Englisch Vokabeln', date:od(0), time:null,    color:rc() },
-    { id:2, title:'Mathematik Test',   date:od(2), time:'08:00', color:rc() },
-    { id:3, title:'Präsi Deutsch',     date:od(4), time:'13:30', color:rc() },
-    { id:4, title:'Elternsprechtag',   date:od(7), time:'15:00', color:rc() },
+    { id:1, title:'Englisch Vokabeln', date:od(0), time:null,    color:colorFor('Englisch Vokabeln') },
+    { id:2, title:'Mathematik Test',   date:od(2), time:'08:00', color:colorFor('Mathematik Test') },
+    { id:3, title:'Präsi Deutsch',     date:od(4), time:'13:30', color:colorFor('Präsi Deutsch') },
+    { id:4, title:'Elternsprechtag',   date:od(7), time:'15:00', color:colorFor('Elternsprechtag') },
   ];
   saveAll();
 }
 
-function rc() { return COLORS[Math.floor(Math.random()*COLORS.length)]; }
-function saveAll() { localStorage.setItem('sp_final_entries', JSON.stringify(entries)); }
+function colorFor(title) {
+  const key = (title.split(/\s+/)[0] || '').toLowerCase();
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return COLORS[h % COLORS.length];
+}
+function saveAll() { localStorage.setItem('sp_final_entries', JSON.stringify(entries)); syncToWorker(); }
+
+function syncToWorker() {
+  if (!WORKER_URL || WORKER_URL.includes('YOUR-SUBDOMAIN')) return;
+  fetch(WORKER_URL + '/entries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: WRITE_SECRET, entries }),
+  }).catch(() => {});
+}
 
 function daysUntil(ds) {
   const t = new Date(); t.setHours(0,0,0,0);
@@ -135,6 +160,18 @@ function parseTime(raw) {
   const h=parseInt(m[1]), min=parseInt(m[2]);
   if(h<0||h>23||min<0||min>59) return null;
   return String(h).padStart(2,'0')+':'+String(min).padStart(2,'0');
+}
+function parseRecurrence(raw) {
+  const mCount = raw.match(/\b(\d{1,2})x\b/i);
+  const count = mCount ? Math.min(parseInt(mCount[1]), 30) : null;
+  if (/\bwöchentlich\b|\bjede woche\b/i.test(raw)) return { step: 7, count: count || 10 };
+  if (/\btäglich\b|\bjeden tag\b/i.test(raw)) return { step: 1, count: count || 5 };
+  return null;
+}
+function stripRecurrence(s) {
+  return s.replace(/\b\d{1,2}x\b/gi,' ')
+    .replace(/\bwöchentlich\b|\bjede woche\b|\btäglich\b|\bjeden tag\b/gi,' ')
+    .replace(/\s+/g,' ').trim();
 }
 function stripDate(s) { return s.replace(/\s*\d{1,2}[.\-\/]\d{1,2}(?:[.\-\/]\d{2,4})?\s*/g,' ').trim(); }
 function stripTime(s) { return s.replace(/\s*\b\d{1,2}[:;]\d{2}\b\s*/g,' ').trim(); }
@@ -169,13 +206,15 @@ function onOvInput() {
   const raw=document.getElementById('ovInp').value;
   const hb=document.getElementById('ovHint');
   if(!raw.trim()){hb.innerHTML='';return;}
-  const ds=parseDate(raw), time=parseTime(raw);
+  const ds=parseDate(raw), time=parseTime(raw), rec=editingId===null?parseRecurrence(raw):null;
   if(ds) {
-    hb.innerHTML='<span class="hint-ok">'+fmtDate(ds)+(time?' &nbsp;<span style="color:#ffcc00;font-weight:600;">'+time+' Uhr</span>':'')+'</span>';
+    let html='<span class="hint-ok">'+fmtDate(ds)+(time?' &nbsp;<span style="color:#ffcc00;font-weight:600;">'+time+' Uhr</span>':'')+'</span>';
+    if(rec) html+=' <span class="hint-ok">&nbsp;· '+rec.count+'x '+(rec.step===7?'wöchentlich':'täglich')+'</span>';
+    hb.innerHTML=html;
   } else if(/\d{1,2}[.\-\/]\d/.test(raw)) {
     hb.innerHTML='<span class="hint-err">Datum nicht erkannt</span>';
   } else {
-    hb.innerHTML='<span class="hint-tip">Datum hinzufügen: z.B. 22.3 oder 22.3 10:00</span>';
+    hb.innerHTML='<span class="hint-tip">Datum: z.B. 22.3 oder 22.3 10:00 · für Serie "wöchentlich" oder "täglich" anhängen</span>';
   }
 }
 function doSave() {
@@ -186,16 +225,24 @@ function doSave() {
   raw=capFirst(raw);
   const ds=parseDate(raw), time=parseTime(raw);
   if(!ds){showToast('Datum angeben – z.B. 22.3');isSaving=false;return;}
-  let title=capFirst(stripTime(stripDate(raw)));
+  const rec = editingId===null ? parseRecurrence(raw) : null;
+  let title=capFirst(stripTime(stripDate(rec?stripRecurrence(raw):raw)));
   if(!title){showToast('Bitte Text eingeben!');isSaving=false;return;}
   if(editingId!==null){
     const idx=entries.findIndex(e=>e.id===editingId);
-    if(idx>-1){entries[idx].title=title;entries[idx].date=ds;entries[idx].time=time;}
+    if(idx>-1){entries[idx].title=title;entries[idx].date=ds;entries[idx].time=time;entries[idx].color=colorFor(title);}
+  } else if(rec){
+    const start=new Date(ds+'T12:00:00');
+    for(let i=0;i<rec.count;i++){
+      const d=new Date(start); d.setDate(d.getDate()+i*rec.step);
+      const dstr=d.toISOString().split('T')[0];
+      entries.push({id:nextId++,title,date:dstr,time,color:colorFor(title)});
+    }
   } else {
-    entries.push({id:nextId++,title,date:ds,time,color:rc()});
+    entries.push({id:nextId++,title,date:ds,time,color:colorFor(title)});
   }
   saveAll(); closeOverlay(); render();
-  showToast(editingId!==null?'Geändert!':'Eingetragen!');
+  showToast(editingId!==null?'Geändert!':(rec?rec.count+'x eingetragen!':'Eingetragen!'));
 }
 function delEntry(id){entries=entries.filter(e=>e.id!==id);saveAll();render();}
 function exportToCalendar(id) {
@@ -239,12 +286,13 @@ function exportToCalendar(id) {
 
 function render() {
   const today=new Date().toISOString().split('T')[0];
-  const upcoming=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
-  const past=entries.filter(e=>daysUntil(e.date)<0).sort((a,b)=>b.date.localeCompare(a.date));
+  const query=(document.getElementById('searchInp').value||'').trim().toLowerCase();
+  const visible = query ? entries.filter(e=>e.title.toLowerCase().includes(query)) : entries;
+  const upcoming=visible.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+  const past=visible.filter(e=>daysUntil(e.date)<0).sort((a,b)=>b.date.localeCompare(a.date));
   const c=document.getElementById('mainContent');
-  const ti=upcoming.filter(e=>e.date===today);
-  // header-sub removed
   if(!entries.length){c.innerHTML='<div class="empty">Noch nichts eingetragen.<br>Tippe unten auf <strong>+</strong></div>';return;}
+  if(!visible.length){c.innerHTML='<div class="empty">Keine Treffer für „'+query+'“.</div>';return;}
   const g={};
   upcoming.forEach(e=>{if(!g[e.date])g[e.date]=[];g[e.date].push(e);});
   // Sort each day: no-time first, then by time ascending
@@ -260,7 +308,8 @@ function render() {
   Object.keys(g).sort().forEach(date=>{
     const days=daysUntil(date),isToday=date===today;
     const label=isToday?'Heute':days===1?'Morgen':fmtDate(date);
-    html+='<div class="day-group"><div class="day-label">'+label+(isToday?'<span class="today-pill">Heute</span>':'')+'</div>';
+    const countdown=(!isToday && days>=2 && days<=6)?'<span class="countdown-pill">in '+days+' Tagen</span>':'';
+    html+='<div class="day-group"><div class="day-label">'+label+(isToday?'<span class="today-pill">Heute</span>':'')+countdown+'</div>';
     g[date].forEach(e=>{
       html+='<div class="entry" style="border-left-color:'+( e.color||'#555')+'" onclick="openOverlay('+e.id+')">'
         +'<div class="entry-body"><div class="entry-title">'+e.title+'</div>'
@@ -283,49 +332,27 @@ function render() {
 }
 
 async function sendPush(){
-  const up=entries.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!up.length){showToast('Nichts offen!');return;}
+  if (!WORKER_URL || WORKER_URL.includes('YOUR-SUBDOMAIN')) { showToast('Worker-URL noch nicht konfiguriert'); return; }
   showToast('Wird gesendet…');
-  let ok=0;
-  for(const e of up){
-    const d=daysUntil(e.date);
-    const w=d===0?'Heute':d===1?'Morgen':'in '+d+' Tagen';
-    const msg=e.time?e.title+' um '+e.time+' Uhr':e.title;
-    const title=w+': '+e.title;
-    try{
-      const fd=new FormData();
-      fd.append('token',API_TOKEN);fd.append('user',USER_KEY);
-      fd.append('title',title);fd.append('message',msg);fd.append('priority','0');
-      const r=await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});
-      const j=await r.json();
-      if(j.status===1)ok++;
-    }catch(e){}
-  }
-  showToast(ok===up.length?'Alle gesendet!':ok+' von '+up.length+' gesendet');
+  try{
+    const r=await fetch(WORKER_URL+'/test-push',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({secret:WRITE_SECRET}),
+    });
+    const j=await r.json();
+    if(!j.total){showToast('Nichts offen!');return;}
+    showToast(j.sent===j.total?'Alle gesendet!':j.sent+' von '+j.total+' gesendet');
+  }catch(err){showToast('Fehler beim Senden');}
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-async function sendSinglePush(title,message){
-  try{const fd=new FormData();fd.append('token',API_TOKEN);fd.append('user',USER_KEY);fd.append('title',title);fd.append('message',message);fd.append('priority','-1');await fetch('https://api.pushover.net/1/messages.json',{method:'POST',body:fd});}catch(e){}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
-async function checkSchedule(){
-  const now=new Date();
-  const hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  const today=now.toISOString().split('T')[0];
-  if(hhmm!=='10:00')return;
-  if(localStorage.getItem('sp_last_schedule')===today)return;
-  localStorage.setItem('sp_last_schedule',today);
-  for(const days of [3,1,0]){
-    const label=days===0?'Heute':days===1?'Morgen':'In 3 Tagen';
-    const targets=entries.filter(e=>daysUntil(e.date)===days);
-    for(const e of targets){
-      const msg=e.time?e.title+' um '+e.time+' Uhr':e.title;
-      await sendSinglePush(label+': '+e.title,msg);
-    }
-  }
-}
-setInterval(checkSchedule,60000);
+
 render();
+syncToWorker();
 </script>
 </body>
 </html>
