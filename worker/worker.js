@@ -42,7 +42,7 @@ async function sendPushover(env, title, message, priority) {
   fd.append('priority', String(priority));
   const res = await fetch('https://api.pushover.net/1/messages.json', { method: 'POST', body: fd });
   const j = await res.json();
-  return j.status === 1;
+  return { ok: j.status === 1, errors: j.errors };
 }
 
 async function handleTestPush(env) {
@@ -53,14 +53,15 @@ async function handleTestPush(env) {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   let ok = 0;
+  let lastError = null;
   for (const e of upcoming) {
     const d = daysUntil(e.date, now);
     const w = d === 0 ? 'Heute' : d === 1 ? 'Morgen' : `in ${d} Tagen`;
     const msg = e.time ? `${e.title} um ${e.time} Uhr` : e.title;
-    const sent = await sendPushover(env, `${w}: ${e.title}`, msg, 0);
-    if (sent) ok++;
+    const result = await sendPushover(env, `${w}: ${e.title}`, msg, 0);
+    if (result.ok) ok++; else lastError = result.errors;
   }
-  return { sent: ok, total: upcoming.length };
+  return { sent: ok, total: upcoming.length, lastError };
 }
 
 async function runDailyReminders(env) {
@@ -76,8 +77,8 @@ async function runDailyReminders(env) {
     const targets = entries.filter((e) => daysUntil(e.date, now) === days);
     for (const e of targets) {
       const msg = e.time ? `${e.title} um ${e.time} Uhr` : e.title;
-      const ok = await sendPushover(env, `${label}: ${e.title}`, msg, -1);
-      if (ok) sent++;
+      const result = await sendPushover(env, `${label}: ${e.title}`, msg, -1);
+      if (result.ok) sent++;
     }
   }
   await env.Planner.put('lastRun', today);
